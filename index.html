@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Forecast</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2c3e50;
+            --text-color: #333;
+            --light-color: #ecf0f1;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            /* Use the local image file that you've uploaded */
+            background-image: url('sky.jpg'); /* Assuming the image is named sky-image.jpg and is in the same folder */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: var(--text-color);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .weather-app {
+            background-color: rgba(255, 255, 255, 0.85);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .search-box {
+            padding: 25px;
+            background-color: var(--secondary-color);
+        }
+
+        .search-input {
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 30px;
+            font-size: 16px;
+            outline: none;
+            box-shadow: var(--shadow);
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            padding: 12px 25px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: var(--shadow);
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        .weather-info {
+            padding: 30px;
+            text-align: center;
+        }
+
+        .location {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: var(--secondary-color);
+        }
+
+        .date {
+            color: #7f8c8d;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .main-weather {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .temperature {
+            font-size: 64px;
+            font-weight: bold;
+            color: var(--secondary-color);
+            margin-right: 20px;
+        }
+
+        .weather-icon {
+            width: 80px;
+            height: 80px;
+        }
+
+        .weather-description {
+            font-size: 18px;
+            text-transform: capitalize;
+            margin-bottom: 30px;
+        }
+
+        .weather-details {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            background-color: rgba(245, 245, 245, 0.9);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .weather-detail {
+            text-align: center;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+
+        .error-message {
+            color: #e74c3c;
+            text-align: center;
+            margin: 20px 0;
+            display: none;
+            padding: 15px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading::after {
+            content: "";
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Location options dropdown */
+        .location-options {
+            display: none;
+            background-color: white;
+            border-radius: 10px;
+            margin: 10px 0;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .location-option {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .location-option:hover {
+            background-color: #f8f9fa;
+        }
+
+        .location-option:last-child {
+            border-bottom: none;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 500px) {
+            .weather-details {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="weather-app">
+            <div class="search-box">
+                <div class="search-input">
+                    <input type="text" id="location-input" placeholder="Enter city or village name..." autocomplete="off">
+                    <button id="search-btn">Search</button>
+                </div>
+                <div class="location-options" id="location-options"></div>
+            </div>
+            
+            <div class="loading" id="loading"></div>
+            
+            <div class="error-message" id="error-message">
+                Location not found. Please try another location or add country name (e.g., "Village Name, Country").
+            </div>
+            
+            <div class="weather-info" id="weather-info">
+                <div class="location" id="location">Loading...</div>
+                <div class="date" id="date"></div>
+                
+                <div class="main-weather">
+                    <div class="temperature" id="temperature"></div>
+                    <img src="" alt="Weather icon" class="weather-icon" id="weather-icon">
+                </div>
+                
+                <div class="weather-description" id="weather-description"></div>
+                
+                <div class="weather-details">
+                    <div class="weather-detail">
+                        <div class="detail-label">Feels Like</div>
+                        <div class="detail-value" id="feels-like"></div>
+                    </div>
+                    <div class="weather-detail">
+                        <div class="detail-label">Humidity</div>
+                        <div class="detail-value" id="humidity"></div>
+                    </div>
+                    <div class="weather-detail">
+                        <div class="detail-label">Wind</div>
+                        <div class="detail-value" id="wind-speed"></div>
+                    </div>
+                    <div class="weather-detail">
+                        <div class="detail-label">Pressure</div>
+                        <div class="detail-value" id="pressure"></div>
+                    </div>
+                    <div class="weather-detail">
+                        <div class="detail-label">Visibility</div>
+                        <div class="detail-value" id="visibility"></div>
+                    </div>
+                    <div class="weather-detail">
+                        <div class="detail-label">Sunrise/Sunset</div>
+                        <div class="detail-value" id="sun-times"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API key - use your working API key here
+        const apiKey = '80654adafb9333c488004ae18948c9b2';
+        const weatherBaseUrl = 'https://api.openweathermap.org/data/2.5/weather';
+        const geocodingUrl = 'https://api.openweathermap.org/geo/1.0/direct';
+
+        // DOM elements
+        const searchBtn = document.getElementById('search-btn');
+        const locationInput = document.getElementById('location-input');
+        const weatherInfo = document.getElementById('weather-info');
+        const errorMessage = document.getElementById('error-message');
+        const loadingIndicator = document.getElementById('loading');
+        const locationElement = document.getElementById('location');
+        const dateElement = document.getElementById('date');
+        const temperatureElement = document.getElementById('temperature');
+        const weatherIcon = document.getElementById('weather-icon');
+        const weatherDescription = document.getElementById('weather-description');
+        const feelsLike = document.getElementById('feels-like');
+        const humidity = document.getElementById('humidity');
+        const windSpeed = document.getElementById('wind-speed');
+        const pressure = document.getElementById('pressure');
+        const visibility = document.getElementById('visibility');
+        const sunTimes = document.getElementById('sun-times');
+        const locationOptions = document.getElementById('location-options');
+
+        // Event listeners
+        searchBtn.addEventListener('click', () => getWeather());
+        locationInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                getWeather();
+            }
+        });
+
+        // Initialize with default city
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set current date
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            dateElement.textContent = now.toLocaleDateString('en-US', options);
+            
+            // Try to get user's location
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        // Get weather by coordinates
+                        getWeatherByCoords(position.coords.latitude, position.coords.longitude);
+                    },
+                    (error) => {
+                        // Fall back to default city if geolocation fails
+                        getWeather('London');
+                    }
+                );
+            } else {
+                // Geolocation not supported, use default city
+                getWeather('London');
+            }
+        });
+
+        // Function to get weather by city name
+        function getWeather(defaultCity) {
+            const city = defaultCity || locationInput.value.trim();
+            
+            if (!city) return;
+            
+            // Show loading and hide other elements
+            weatherInfo.style.display = 'none';
+            errorMessage.style.display = 'none';
+            loadingIndicator.style.display = 'block';
+            locationOptions.style.display = 'none';
+            
+            // First, get coordinates using the geocoding API
+            fetchLocationCoordinates(city);
+        }
+
+        // Function to fetch location coordinates first
+        function fetchLocationCoordinates(location) {
+            // Geocoding API accepts location names and returns coordinates
+            // limit=5 to get multiple results, which increases chances of finding small villages
+            const url = `${geocodingUrl}?q=${encodeURIComponent(location)}&limit=5&appid=${apiKey}`;
+            
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Location search failed (${response.status})`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.length === 0) {
+                        throw new Error('Location not found');
+                    }
+                    
+                    if (data.length > 1) {
+                        // Show options for user to select the correct location
+                        showLocationOptions(data);
+                    } else {
+                        // Use the first result's coordinates
+                        const { lat, lon, name, country, state } = data[0];
+                        fetchWeatherByCoords(lat, lon, name, country, state);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching location data:', error);
+                    loadingIndicator.style.display = 'none';
+                    errorMessage.style.display = 'block';
+                    weatherInfo.style.display = 'none';
+                });
+        }
+
+        // Function to show multiple location options for user to select
+        function showLocationOptions(locations) {
+            // Hide loading indicator
+            loadingIndicator.style.display = 'none';
+            
+            // Clear previous options
+            locationOptions.innerHTML = '';
+            
+            // Create an option for each location
+            locations.forEach(loc => {
+                const option = document.createElement('div');
+                option.className = 'location-option';
+                
+                // Format the location name with state and country if available
+                let locationText = loc.name;
+                if (loc.state) locationText += `, ${loc.state}`;
+                locationText += `, ${loc.country}`;
+                
+                option.textContent = locationText;
+                
+                // Add click event to select this location
+                option.addEventListener('click', () => {
+                    // Hide options and show loading again
+                    locationOptions.style.display = 'none';
+                    loadingIndicator.style.display = 'block';
+                    
+                    // Fetch weather for this location
+                    fetchWeatherByCoords(loc.lat, loc.lon, loc.name, loc.country, loc.state);
+                });
+                
+                locationOptions.appendChild(option);
+            });
+            
+            // Show the options
+            locationOptions.style.display = 'block';
+        }
+
+        // Function to get weather by coordinates
+        function getWeatherByCoords(lat, lon) {
+            // Show loading and hide other elements
+            weatherInfo.style.display = 'none';
+            errorMessage.style.display = 'none';
+            loadingIndicator.style.display = 'block';
+            locationOptions.style.display = 'none';
+            
+            // Use the new function to fetch weather by coordinates
+            fetchWeatherByCoords(lat, lon);
+        }
+
+        // Function to fetch weather data by coordinates
+        function fetchWeatherByCoords(lat, lon, locationName = null, country = null, state = null) {
+            const url = `${weatherBaseUrl}?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey}`;
+            
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Weather data not available (${response.status})`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // If we have more specific location info from geocoding, use it
+                    if (locationName) {
+                        // Override the location data with more precise information
+                        data.name = locationName;
+                        if (country) data.sys.country = country;
+                        
+                        // Add state/province information if available
+                        data.state = state;
+                    }
+                    
+                    displayWeather(data);
+                    loadingIndicator.style.display = 'none';
+                    weatherInfo.style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Error fetching weather data:', error);
+                    loadingIndicator.style.display = 'none';
+                    errorMessage.style.display = 'block';
+                    weatherInfo.style.display = 'none';
+                });
+        }
+
+        // Function to display weather data
+        function displayWeather(data) {
+            // Extract data from response
+            const cityName = data.name;
+            const country = data.sys.country;
+            const state = data.state || ''; // Use state data if available
+            const temp = Math.round(data.main.temp);
+            const feelsLikeTemp = Math.round(data.main.feels_like);
+            const desc = data.weather[0].description;
+            const iconCode = data.weather[0].icon;
+            const humidityValue = data.main.humidity;
+            const windSpeedValue = Math.round(data.wind.speed * 3.6); // Convert m/s to km/h
+            const pressureValue = data.main.pressure;
+            const visibilityValue = data.visibility ? (data.visibility / 1000).toFixed(1) : 'N/A'; // Convert m to km
+            
+            // Format sunrise and sunset times
+            const sunriseTime = new Date(data.sys.sunrise * 1000);
+            const sunsetTime = new Date(data.sys.sunset * 1000);
+            const sunriseFormatted = sunriseTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const sunsetFormatted = sunsetTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            // Set values to DOM elements - include state if available
+            locationElement.textContent = state ? 
+                `${cityName}, ${state}, ${country}` : 
+                `${cityName}, ${country}`;
+            
+            temperatureElement.textContent = `${temp}°C`;
+            weatherDescription.textContent = desc;
+            feelsLike.textContent = `${feelsLikeTemp}°C`;
+            humidity.textContent = `${humidityValue}%`;
+            windSpeed.textContent = `${windSpeedValue} km/h`;
+            pressure.textContent = `${pressureValue} hPa`;
+            visibility.textContent = `${visibilityValue} km`;
+            sunTimes.textContent = `↑${sunriseFormatted} ↓${sunsetFormatted}`;
+            
+            // Set weather icon from OpenWeatherMap
+            weatherIcon.src = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+            
+            // Clear input field
+            locationInput.value = '';
+        }
+    </script>
+</body>
+</html>
